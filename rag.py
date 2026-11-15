@@ -10,11 +10,12 @@ from fastembed import TextEmbedding
 load_dotenv()
 
 CHUNK_SIZE, OVERLAP = 1000, 200
-TOP_K, MIN_SCORE = 5, 0.6
+TOP_K = 5
 NOT_FOUND = "I couldn't find this information in the uploaded documents."
 
 SYSTEM_PROMPT = f"""You answer questions using ONLY the provided document excerpts.
 - Cite sources inline using only plain square brackets like [1], [2] matching the excerpt numbers.
+- For broad requests like "describe" or "summarize", summarize what the excerpts say.
 - If the excerpts do not contain the answer, reply exactly: "{NOT_FOUND}"
 - Use the conversation history to understand follow-up questions."""
 
@@ -42,7 +43,7 @@ class RAG:
 
     def retrieve(self, query):
         scores = self.vectors @ next(self.embedder.query_embed(query))
-        return [self.chunks[i] for i in np.argsort(scores)[::-1][:TOP_K] if scores[i] >= MIN_SCORE]
+        return [self.chunks[i] for i in np.argsort(scores)[::-1][:TOP_K]]
 
     def chat(self, messages):
         res = self.llm.chat.completions.create(model=self.model, messages=messages, temperature=0)
@@ -55,12 +56,9 @@ class RAG:
                                {"role": "user", "content": question}])
 
         sources = self.retrieve(query)
-        if sources:
-            context = "\n\n".join(f"[{i}] ({s['source']}, page {s['page']})\n{s['text']}" for i, s in enumerate(sources, 1))
-            answer = self.chat([{"role": "system", "content": SYSTEM_PROMPT}, *self.history[-6:],
-                                {"role": "user", "content": f"Excerpts:\n{context}\n\nQuestion: {question}"}])
-        else:
-            answer = NOT_FOUND
+        context = "\n\n".join(f"[{i}] ({s['source']}, page {s['page']})\n{s['text']}" for i, s in enumerate(sources, 1))
+        answer = self.chat([{"role": "system", "content": SYSTEM_PROMPT}, *self.history[-6:],
+                            {"role": "user", "content": f"Excerpts:\n{context}\n\nQuestion: {question}"}])
         if NOT_FOUND in answer:
             sources = []
 

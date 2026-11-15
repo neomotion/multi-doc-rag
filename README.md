@@ -8,7 +8,7 @@ Upload several PDF reports and ask questions in plain language. Answers come onl
 - **Semantic retrieval**: `bge-small-en-v1.5` embeddings (via `fastembed`, runs locally on CPU) with cosine similarity
 - **Grounded answers**: the LLM (Groq, `openai/gpt-oss-120b`) answers only from the retrieved excerpts
 - **Source references**: inline citations like `[1]`, plus an expandable list of file name, page and excerpt
-- **Unavailable information**: if no excerpt passes the similarity threshold, or the LLM finds no answer, it replies *"I couldn't find this information in the uploaded documents."*
+- **Unavailable information**: if the retrieved excerpts do not contain the answer, the LLM replies *"I couldn't find this information in the uploaded documents."*
 - **Conversational memory**: follow-ups such as *"what about the previous year?"* are rewritten into a standalone search query using the chat history. The last 3 exchanges are also passed to the LLM.
 - **Chat history**: shown in the UI, with a button to clear it
 
@@ -17,9 +17,9 @@ Upload several PDF reports and ask questions in plain language. Answers come onl
 ```
 PDFs ─► extract text per page ─► 1000-char chunks (200 overlap) ─► embeddings (in-memory)
 
-Question + chat history ─► LLM rewrites to standalone query ─► top-5 similar chunks (score ≥ 0.6)
-        └─► none found ─► "I couldn't find this information..."
-        └─► found ─► LLM answers with excerpts + history ─► answer with [n] citations + sources
+Question + chat history ─► LLM rewrites to standalone query ─► top-5 most similar chunks
+        ─► LLM answers from excerpts + history ─► answer with [n] citations + sources
+                                                 (or "I couldn't find this information..." if not in excerpts)
 ```
 
 ## Sample documents

@@ -16,7 +16,10 @@ with st.sidebar:
             with st.spinner(f"Indexing {f.name}..."):
                 n = rag.add_pdf(f, f.name)
             st.session_state.files.add(f.name)
-            st.success(f"{f.name}: {n} chunks")
+            if n:
+                st.success(f"{f.name}: {n} chunks")
+            else:
+                st.error(f"{f.name}: no text found (scanned/image PDF?)")
     st.caption(f"{len(st.session_state.files)} documents, {len(rag.chunks)} chunks indexed")
     if st.button("Clear chat history"):
         rag.reset()
